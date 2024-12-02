@@ -1,13 +1,18 @@
+#define STB_IMAGE_IMPLEMENTATION
 // Include statements
 #include "headers/Window.h"
 #include "headers/Shader.h"
 #include "headers/SimState.h"
 #include "headers/StateLoader.h"
+#include "headers/stb_image.h"
 
+
+#include <unistd.h>
+#include <iostream>
 // Handles for OpenGL buffers and shaders
 unsigned int VAO, VBO, EBO;
 unsigned int cursorVBO, cursorEBO;
-unsigned int densTex, tempTex;
+unsigned int densTex, tempTex, wallTex;
 Shader* shaders;
 Shader* currentShader;
 static int shaderParam = 0;
@@ -27,11 +32,12 @@ float bottomPos;
 ImVec2 controlPos;
 ImVec2 controlSize;
 
-// Cursor properties 
+// Cursor properties
 float cursorSize = 0.1;
 int cursorShape = 1;
 bool showCursor = false;
 
+int imgWidth, imgHeight, nrChannels;
 
 // OpenGL Error Callback
 void ErrorCallback(int error, const char* description)
@@ -74,7 +80,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 // OpenGL mouse button callback
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-        
+
 
 }
 
@@ -107,8 +113,8 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
 
     // Set up main window
     GLFWwindow* window = glfwCreateWindow(windowWidth, windowWidth, "Fluid Simulator", NULL, NULL);
-    if(window == NULL){ 
-        fprintf(stderr, "GLFW failed to create window."); 
+    if(window == NULL){
+        fprintf(stderr, "GLFW failed to create window.");
         glfwTerminate();
     }
     glfwMakeContextCurrent(window);
@@ -118,7 +124,7 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
     if(GLEW_OK != err){
         fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
     }
-    
+
     // Set up viewing window
     glViewport(0, 0, windowWidth, windowWidth);
     glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
@@ -159,8 +165,7 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
          1.0f,  1.0f,  0.0f,      1.0f,  0.0f,
          1.0f, -1.0f,  0.0f,      1.0f,  1.0f,
         -1.0f, -1.0f,  0.0f,      0.0f,  1.0f,
-        -1.0f,  1.0f,  0.0f,      0.0f,  0.0f
-
+        -1.0f,  1.0f,  0.0f,      0.0f,  0.0f,
     };
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -177,12 +182,11 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
         0, 1, 3,
         1, 2, 3,
         4, 5, 7,
-        5, 6, 7
+        5, 6, 7,
     };
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
 
     // Set blending properties for cursor
     glEnable(GL_BLEND);
@@ -196,8 +200,11 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
 }
 
 // Processes to be called each frame for simulation window
-void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
+void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature, unsigned char* walldata)
 {
+    if(shaderParam == 0)
+        DrawLight(window, density, temperature);
+
     // Clear background color
     glBlendFunc(GL_ONE, GL_ZERO);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -216,6 +223,9 @@ void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
     glActiveTexture(GL_TEXTURE1);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, texWidth, texWidth,  0, GL_RED, GL_FLOAT, temperature);
     glBindTexture(GL_TEXTURE_2D, tempTex);
+    glActiveTexture(GL_TEXTURE2);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, walldata);
+    glBindTexture(GL_TEXTURE_2D, wallTex);
 
     // Render quad of triangles
     glBindVertexArray(VAO);
@@ -225,6 +235,22 @@ void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature)
     // glfwSwapBuffers(window);
     glfwPollEvents();
 }
+
+
+unsigned char* SetupWallTexture()
+{
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* data = stbi_load("../src/img/wall.png", &imgWidth, &imgHeight, &nrChannels, 0);
+
+    if (!data)
+    {
+        std::cerr << "Failed to load wall texture" << std::endl;
+        return nullptr;
+    }
+
+    return data;
+}
+
 
 // Set up textures in OpenGL
 void SetupTextures()
@@ -249,16 +275,28 @@ void SetupTextures()
     glBindTexture(GL_TEXTURE_2D, tempTex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, texWidth, texWidth, 0, GL_RED, GL_FLOAT, blank);
+
+    // Set up wall background texture
+    glGenTextures(1, &wallTex);
+    glBindTexture(GL_TEXTURE_2D, wallTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    unsigned char* data = stbi_load("../src/img/wall.png", &imgWidth, &imgHeight, &nrChannels, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
 
     // Assign texture units
     for(int i = 0; i < numShaders; i++){
         shaders[i].Use();
         glUniform1i(glGetUniformLocation(shaders[i].ID, "densTex"), 0);
         glUniform1i(glGetUniformLocation(shaders[i].ID, "tempTex"), 1);
+        glUniform1i(glGetUniformLocation(shaders[i].ID, "wallTex"), 2);
     }
 }
 
@@ -270,7 +308,7 @@ void ControlWindowSetup(GLFWwindow* window, int controlPanelWidth)
 
     // Create ImGui context in open window
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;   
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
 
@@ -310,7 +348,7 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
     // Render ImGui frame
     ImGui::End();
     ImGui::Render();
-    
+
     // Send ImGui rendering to OpenGL
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     glfwSwapBuffers(window);
@@ -342,8 +380,8 @@ void ParameterGUI(SimState* state)
         ImGui::TextUnformatted(const_cast<char*>(state->params.FloatTip(scaleParam, SimParams::scale).c_str()));
         ImGui::EndTooltip(); }
     ImGui::Combo("##scalecombo", &scaleParam, "Length Scale\0Time Scale\0");
-    ImGui::InputFloat("##scalebox", 
-        state->params.FloatPointer(scaleParam, SimParams::scale), 
+    ImGui::InputFloat("##scalebox",
+        state->params.FloatPointer(scaleParam, SimParams::scale),
         0.001, 0.1, "%.3e");
     if(*(state->params.FloatPointer(scaleParam, SimParams::scale)) < state->params.FloatMin(scaleParam, SimParams::scale)){
         *(state->params.FloatPointer(scaleParam, SimParams::scale)) = state->params.FloatMin(scaleParam, SimParams::scale);
@@ -360,8 +398,8 @@ void ParameterGUI(SimState* state)
         ImGui::TextUnformatted(const_cast<char*>(state->params.FloatTip(fluidParam, SimParams::fluid).c_str()));
         ImGui::EndTooltip(); }
     ImGui::Combo("##fluidcombo", &fluidParam, "Viscosity\0Molecular Diffusion\0Thermal Diffusion\0");
-    ImGui::InputFloat("##fluidbox", 
-        state->params.FloatPointer(fluidParam, SimParams::fluid), 
+    ImGui::InputFloat("##fluidbox",
+        state->params.FloatPointer(fluidParam, SimParams::fluid),
         0.000001, 0.0001, "%.3e");
     // ImGui::Text("");
 
@@ -375,8 +413,8 @@ void ParameterGUI(SimState* state)
         ImGui::TextUnformatted(const_cast<char*>(state->params.FloatTip(backgroundParam, SimParams::background).c_str()));
         ImGui::EndTooltip(); }
     ImGui::Combo("##backgroundcombo", &backgroundParam, "Gravitational Force\0Background Density\0Mass Ratio\0Background Temperature\0");
-    ImGui::InputFloat("##backgroundbox", 
-        state->params.FloatPointer(backgroundParam, SimParams::background), 
+    ImGui::InputFloat("##backgroundbox",
+        state->params.FloatPointer(backgroundParam, SimParams::background),
         0.1, 1.0, "%.3e");
     // ImGui::Text("");
 
@@ -390,8 +428,8 @@ void ParameterGUI(SimState* state)
         ImGui::TextUnformatted(const_cast<char*>(state->params.FloatTip(decayParam, SimParams::decay).c_str()));
         ImGui::EndTooltip(); }
     ImGui::Combo("##decaycombo", &decayParam, "Density Decay Rate\0Decay Temperature Factor\0Temperature Decay Rate\0");
-    ImGui::InputFloat("##decaybox", 
-        state->params.FloatPointer(decayParam, SimParams::decay), 
+    ImGui::InputFloat("##decaybox",
+        state->params.FloatPointer(decayParam, SimParams::decay),
         1.0, 10.0, "%.3e");
     // ImGui::Text("");
 
@@ -675,7 +713,7 @@ void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source)
             if(dynamic){
                 switch(sourceType){
                     case 0:
-                        source->CreateGasSourceDynamic(static_cast<SimSource::Shape>(cursorShape), 
+                        source->CreateGasSourceDynamic(static_cast<SimSource::Shape>(cursorShape),
                                         flowRate, temperature, xposScreen, yposScreen, cursorSize,
                                         fVar, tVar);
                         break;
@@ -690,7 +728,7 @@ void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source)
                         break;
                     case 4:
                         source->CreateEnergySourceDynamic(static_cast<SimSource::Shape>(cursorShape),
-                                        flux, state->params.airTemp, state->params.airDens, 
+                                        flux, state->params.airTemp, state->params.airDens,
                                         xposScreen, yposScreen, cursorSize,
                                         tVar);
                         break;
@@ -698,7 +736,7 @@ void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source)
             }else{
                 switch(sourceType){
                     case 0:
-                        source->CreateGasSource(static_cast<SimSource::Shape>(cursorShape), 
+                        source->CreateGasSource(static_cast<SimSource::Shape>(cursorShape),
                                         flowRate, temperature, xposScreen, yposScreen, cursorSize);
                         break;
                     case 1:
@@ -710,7 +748,7 @@ void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source)
                         break;
                     case 4:
                         source->CreateEnergySource(static_cast<SimSource::Shape>(cursorShape),
-                                        flux, state->params.airTemp, state->params.airDens, 
+                                        flux, state->params.airTemp, state->params.airDens,
                                         xposScreen, yposScreen, cursorSize);
                         break;
                 }
@@ -754,6 +792,47 @@ void DrawCursor(GLFWwindow* window)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void *) (6 * sizeof(unsigned int)));
         currentShader -> Use();
 }
+
+void DrawLight(GLFWwindow* window, float* density, float* temperature)
+{
+    float avgX = 0.5f;
+    float avgY = 0.3f;
+
+    float sumX = 0.0f;
+    float sumY = 0.0f;
+    int totalPoints = 0;
+
+    float normalizedX = 0.0f;
+    float normalizedY = 0.0f;
+
+    // Iterate through the density and temperature arrays
+    for (int y = 0; y < texWidth; ++y) {
+        for (int x = 0; x < texWidth; ++x) {
+            int index = y * texWidth + x; // Linear index for the 2D grid
+            if (density[index] > 0.1f && temperature[index] > 1500.0f) {
+                // Convert grid coordinates to normalized device coordinates
+                normalizedX = (float(x) / texWidth);
+                normalizedY = (float(y) / texWidth);
+
+                sumX += normalizedX;
+                sumY += normalizedY;
+                ++totalPoints;
+            }
+        }
+    }
+    if (totalPoints > 0) {
+        avgX = sumX / totalPoints;
+        avgY = sumY / totalPoints;
+    }
+
+    shaders[0].Use();
+    float lightIntensity = 1.0f; // Maximum brightness
+    float lightRadius = 0.5f; // Distance in UV space where the light fades
+    glUniform2f(glGetUniformLocation(shaders[0].ID, "lightPos"), avgX, avgY);
+    glUniform1f(glGetUniformLocation(shaders[0].ID, "lightIntensity"), lightIntensity);
+    glUniform1f(glGetUniformLocation(shaders[0].ID, "lightRadius"), lightRadius);
+}
+
 
 // GUI for framerate functions
 void FramerateGUI(SimTimer* timer)

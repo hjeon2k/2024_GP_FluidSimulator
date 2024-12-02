@@ -54,6 +54,8 @@ int main(int argc, char** argv){
     output.SetBitDepth(24);
     unsigned char* imageData = (unsigned char *)malloc(sizeof(unsigned char) * (winWidth*winWidth*3));
 
+    unsigned char* walldata = SetupWallTexture();
+
     // Simulation loop
     while(!glfwWindowShouldClose(window))
     {
@@ -61,7 +63,7 @@ int main(int argc, char** argv){
         timer.StartFrame();
 
         // Draw current density to OpenGL window
-        SimWindowRenderLoop(window, state.fields.dens, state.fields.temp);
+        SimWindowRenderLoop(window, state.fields.dens, state.fields.temp, walldata);
         glfwSwapBuffers(window);
 
         // Update dynamic sources
@@ -80,7 +82,7 @@ int main(int argc, char** argv){
                 pixelColor.Red      = imageData[ind];
                 pixelColor.Green    = imageData[ind+1];
                 pixelColor.Blue     = imageData[ind+2];
-                
+
 
                 *output(j, winWidth - (i + 1)) = pixelColor;
             }
@@ -88,7 +90,7 @@ int main(int argc, char** argv){
         std::string savePath = projectPath + "/output/bmp/" + filename + "_" + std::to_string(timer.CurrentFrame()) + ".bmp";
         output.WriteToFile(const_cast<char *>(savePath.c_str()));
 
-        // Read out frame rate per every 
+        // Read out frame rate per every
         timer.DisplayFrameRate(int(props.fps));
 
         if(timer.CurrentFrame() % int(props.fps) == 0){
@@ -100,6 +102,8 @@ int main(int argc, char** argv){
             break;
         }
     }
+
+    delete[] walldata;
 
     // End GLFW context
     glfwDestroyWindow(window);

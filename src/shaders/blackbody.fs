@@ -10,6 +10,8 @@ uniform sampler2D tempTex;
 // Input parameters
 uniform float bMod = 1.0;
 const float sbConstant = 0.000000000001;
+const float minTemp = 300.0;
+const float maxTemp = 6000.0;
 
 void main()
 {
@@ -21,7 +23,7 @@ void main()
     float intensity = sbConstant * temp * temp * temp * temp;
 
     // BLackbody color temperature
-    float t = (temp - 1900.0) / (5400.0 - 1900.0);
+    float t = (temp - minTemp) / (maxTemp - minTemp);
     float red = 1.0;
     float green = (147.0 + (255.0 - 147.0) * t) / 255.0;
     float blue = (41.0 + (251.0 - 41.0) * t) / 255.0;

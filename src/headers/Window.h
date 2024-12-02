@@ -39,12 +39,14 @@ struct ShaderVars {
 
 GLFWwindow* SimWindowSetup(int res, int windowWidth);
 void SetupTextures();
+unsigned char* SetupWallTexture();
 void DrawCursor(GLFWwindow* window);
+void DrawLight(GLFWwindow* window, float* density, float* temperature);
 void ControlWindowSetup(GLFWwindow* window, int controlPanelWidth);
 
 /// Main loop render methods ///
 
-void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature);
+void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature, unsigned char* walldata);
 void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* source, SimTimer* timer, WindowProps* props);
 
 // GUI submethods

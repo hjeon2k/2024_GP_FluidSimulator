@@ -388,7 +388,7 @@ void SimSource::RemoveSourceAtPoint(float x, float y, float dist)
                     break;
 
                 case square:
-                    if((xDist < rad) 
+                    if((xDist < rad)
                     && (yDist < rad)){
                         RemoveSource(source);
                         return;

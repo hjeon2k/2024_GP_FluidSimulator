@@ -12,7 +12,7 @@
         "densDecay" : 0.0,
         "tempFactor" : 0.0,
         "tempDecay" : 0.0,
-        "closedBoundaries" : false,
+        "closedBoundaries" : true,
         "advancedCoefficients" : true,
         "gravityOn" : true,
         "temperatureOn" : true,

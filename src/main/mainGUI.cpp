@@ -42,6 +42,8 @@ int main(int argc, char** argv){
     timer.TrackFrameRatePerMS(1000);
     timer.StartSimulation();
 
+    unsigned char* walldata = SetupWallTexture();
+
     // Simulation loop
     while(!glfwWindowShouldClose(window))
     {
@@ -49,7 +51,7 @@ int main(int argc, char** argv){
         timer.StartFrame();
 
         // Draw current density to OpenGL window
-        SimWindowRenderLoop(window, state.fields.dens, state.fields.temp);
+        SimWindowRenderLoop(window, state.fields.dens, state.fields.temp, walldata);
 
         // Draw control window
         ControlWindowRenderLoop(window, &state, &sources, &timer, &props);
@@ -63,6 +65,8 @@ int main(int argc, char** argv){
         // Sleep until frame is complete
         timer.EndFrame();
     }
+
+    delete[] walldata;
 
     CloseWindows(window);
 

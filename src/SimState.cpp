@@ -268,7 +268,7 @@ void SimState::Diffuse(int b, float * x, float * x0, float (*diff)(int, SimParam
                 float a_t = a * diff(ind(i,j), params, fields);
 
                 // Diffusion step
-                x[ind(i,j)] = (x0[ind(i,j)] + 
+                x[ind(i,j)] = (x0[ind(i,j)] +
                 a_t*(x[ind(i-1,j)] + x[ind(i+1,j)] + x[ind(i,j-1)] + x[ind(i,j+1)])) / (1 + 4*a_t);
             }
         }
@@ -309,7 +309,7 @@ void SimState::Advect(int b, float * d, float * d0, float * u, float * v, float 
 {
     int i0, j0, i1, j1;
     float x, y, s0, t0, s1, t1;
-    
+
     // Adjust dt to account for cell size
     float cellSize = params.lengthScale / N;
     float dt0 = dt / cellSize;
@@ -352,7 +352,7 @@ void SimState::HodgeProjection(float * u, float * v, float * p, float * div)
     // Adjust for cell size
     float cellSize = params.lengthScale / N;
 
-    // Calculate divergence in each grid element 
+    // Calculate divergence in each grid element
     for(int i = 1; i <= N; i++){
         for(int j = 1; j <= N; j++){
             div[ind(i,j)] = -0.5 * cellSize * (u[ind(i+1,j)]-u[ind(i-1,j)]+
@@ -374,7 +374,7 @@ void SimState::HodgeProjection(float * u, float * v, float * p, float * div)
         SetBoundary(0, p);
     }
 
-    // Calculate divergence-free Hodge projection in each grid element 
+    // Calculate divergence-free Hodge projection in each grid element
     for(int i = 1; i <= N; i++){
         for(int j = 1; j <= N; j++){
             u[ind(i,j)] -= 0.5 * (p[ind(i+1,j)] - p[ind(i-1,j)]) / cellSize;
@@ -424,9 +424,9 @@ void SimState::DensityStep(float dt)
     AddSource(fields.dens, fields.dens_prev, dt);
 
     // Diffuse by Fick's law
-    swap(fields.dens_prev, fields.dens); 
+    swap(fields.dens_prev, fields.dens);
     Diffuse(params.closedBoundaries ? 0 : -1, fields.dens, fields.dens_prev, SimState::AdjustedMassDiffusivity, dt);
-    swap(fields.dens_prev, fields.dens); 
+    swap(fields.dens_prev, fields.dens);
 
     // Dissipate smoke
     if(params.densDecay > 0.0){
@@ -550,7 +550,7 @@ SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float 
 }
 
 // Constructor for buoyant simulation
-SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float diffusion, 
+SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float diffusion,
                      float gravity, float airDensity, float massRatio)
 {
     // Set input parameters
@@ -579,8 +579,8 @@ SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float 
 }
 
 // Constructor for full thermal simulation
-SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float diffusion, 
-                     float gravity, float airDensity, float massRatio, 
+SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float diffusion,
+                     float gravity, float airDensity, float massRatio,
                      float airTemp, float diffTemp)
 {
     // Set input parameters
@@ -609,9 +609,9 @@ SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float 
 }
 
 // Constructor for full thermal simulation
-SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float diffusion, 
-                     float gravity, float airDensity, float massRatio, 
-                     float airTemp, float diffTemp, 
+SimParams::SimParams(float lengthScale, float timeScale, float viscosity, float diffusion,
+                     float gravity, float airDensity, float massRatio,
+                     float airTemp, float diffTemp,
                      float densDecay, float tempFactor, float tempDecay)
 {
     // Set input parameters
