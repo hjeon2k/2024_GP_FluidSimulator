@@ -24,7 +24,7 @@
             "type" : "gas",
             "shape" : "circle",
             "flowRate" : 25.0,
-            "sourceTemp" : 2500.0,
+            "sourceTemp" : 2400.0,
             "xCenter" : 0.0,
             "yCenter" : -0.5,
             "radius" : 0.05,
