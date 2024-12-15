@@ -146,6 +146,12 @@ void SimSource::Source::SetIndices(int N, Shape shape, float xCenter, float yCen
 }
 
 
+void SimSource::Source::SetPosition(float newXCenter, float newYCenter){
+    this -> xCenter = newXCenter;
+    this -> yCenter = yCenter;
+
+    SetIndices(80, this -> shape, this->xCenter, this->yCenter, this->radius);
+}
 
 // Create gas source and add to source list
 void SimSource::CreateGasSource(Shape shape, float flowRate, float sourceTemp, float xCenter, float yCenter, float radius)

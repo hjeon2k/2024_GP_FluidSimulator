@@ -1,0 +1,27 @@
+{
+    "params" :{
+        "lengthScale" : 0.5,
+        "timeScale" : 1.0,
+        "visc" : 0.000018,
+        "diff" : 0.000028,
+        "grav" : -9.8,
+        "airDensity" : 1.29235,
+        "massRatio" : 0.54,
+        "airTemp" : 300.0,
+        "diffTemp" : 0.0002338,
+        "densDecay" : 0.0,
+        "tempFactor" : 0.0,
+        "tempDecay" : 0.0,
+        "closedBoundaries" : true,
+        "advancedCoefficients" : true,
+        "gravityOn" : true,
+        "temperatureOn" : true,
+        "solverSteps" : 20
+    },
+    "windowProps" :{
+        "resolution" : 80,
+        "winWidth" : 800,
+        "controlWidth" : 240,
+        "maxFrameRate" : 1000
+    }
+}

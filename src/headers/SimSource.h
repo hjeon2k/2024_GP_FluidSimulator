@@ -60,7 +60,7 @@ class SimSource
         void UpdateSourcesDynamic();
         void Reset();
 
-    protected:
+    // protected:
 
         // Pointers to source grids
         float * xVel;
@@ -84,6 +84,7 @@ class SimSource
 
                 // Public methods
                 void SetActive(bool isActive);
+                void SetPosition(float newXCenter, float newYCenter);
 
                 // Flags
                 bool isActive = true;

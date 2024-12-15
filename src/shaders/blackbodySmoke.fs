@@ -12,7 +12,7 @@ uniform sampler2D wallTex;
 uniform float bMod = 1.0;
 uniform float sMod = 1.0;
 
-uniform vec2 lightPos;    // Position of the light in normalized device coordinates (-1 to 1)
+uniform vec2 lightPos[10];    // Position of the light in normalized device coordinates (-1 to 1)
 uniform float lightIntensity; // Maximum brightness of the light
 uniform float lightRadius;    // Radius where the light fully fades out
 
@@ -41,11 +41,14 @@ void main()
     // Final color as alpha mix of blackbody and density
     vec3 outColor = dens * bMod * vec3(sMod + red * intensity, sMod + green * intensity, sMod + blue * intensity);
 
-    float distance = length(TexCoord - lightPos);
-    float attenuation = pow(clamp(1.0 - (distance / lightRadius), 0.1, 1.0), 2);
-    vec3 lightEffect = (1 - dens) * lightIntensity * attenuation * wallColor;
+    FragColor = vec4(outColor, 0.7);
+    for (int i = 0; i < 10; ++i) {
+        if (lightPos[i][0] == 0) continue;
+        float distance = length(TexCoord - lightPos[i]);
+        float attenuation = pow(clamp(1.0 - (distance / lightRadius), 0.1, 1.0), 2);
+        vec3 lightEffect = (1 - dens) * lightIntensity * attenuation * wallColor;
 
-    gl_FragColor = vec4(outColor, 0.7) + vec4(lightEffect, 0.3);
-
-
+        // gl_FragColor = vec4(outColor, 0.7) + vec4(lightEffect, 0.3);
+        FragColor = FragColor + vec4(lightEffect, 0.3);
+    }
 }

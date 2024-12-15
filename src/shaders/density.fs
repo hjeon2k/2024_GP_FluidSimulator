@@ -15,5 +15,6 @@ void main()
 {
     // Return grayscale density, scaled by brightness modifier
     float texPoint = bMod * texture(densTex, TexCoord).x * smConstant;
-    gl_FragColor = vec4(texPoint, texPoint, texPoint, 1.0);
+    //gl_FragColor = vec4(texPoint, texPoint, texPoint, 1.0);
+    FragColor = vec4(texPoint, texPoint, texPoint, 1.0);
 }

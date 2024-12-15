@@ -28,10 +28,10 @@ int main(int argc, char** argv){
 
     // Initialize state objects
     WindowProps props;
-    LoadWindow("match", &props);
+    LoadWindow("empty", &props);
     SimState state(props.resolution);
     SimSource sources(&state);
-    LoadState("match", &state, &sources);
+    LoadState("empty", &state, &sources);
 
     // Set up simulation and control windows
     GLFWwindow* window = SimWindowSetup(props.resolution, props.winWidth);
@@ -51,7 +51,8 @@ int main(int argc, char** argv){
         timer.StartFrame();
 
         // Draw current density to OpenGL window
-        SimWindowRenderLoop(window, state.fields.dens, state.fields.temp, walldata);
+        SimWindowRenderLoop(window, &state, &sources, walldata);
+        // SimWindowRenderLoop(window, state.fields.dens, state.fields.temp, walldata);
 
         // Draw control window
         ControlWindowRenderLoop(window, &state, &sources, &timer, &props);

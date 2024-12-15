@@ -11,6 +11,7 @@ void main()
     // Return black
     //gl_FragColor = vec4(TexCoord, 0.0, 1.0);
     vec4 wallColor = texture(wallTex, TexCoord);
-    gl_FragColor = wallColor;
+    // gl_FragColor = wallColor;
+    FragColor = wallColor;
 }
 

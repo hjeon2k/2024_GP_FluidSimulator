@@ -20,5 +20,6 @@ void main()
     t = pow(clamp(t, 0.0, 1.0), 2.0);
 
     // Return lerped color between blue and red
-    gl_FragColor = vec4(t, 0.0, 1.0 - t, 1.0);
+    // gl_FragColor = vec4(t, 0.0, 1.0 - t, 1.0);
+    FragColor = vec4(t, 0.0, 1.0 - t, 1.0);
 }

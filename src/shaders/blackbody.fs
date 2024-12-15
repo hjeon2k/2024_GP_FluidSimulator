@@ -30,7 +30,8 @@ void main()
 
     // Final color as alpha mix of blackbody and density
     vec3 outColor = dens * bMod * intensity * vec3(red, green, blue);
-    gl_FragColor = vec4(outColor, 1.0);
+    //gl_FragColor = vec4(outColor, 1.0);
+    FragColor = vec4(outColor, 1.0);
 
 
 }

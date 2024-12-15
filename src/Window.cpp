@@ -6,6 +6,8 @@
 #include "headers/StateLoader.h"
 #include "headers/stb_image.h"
 
+#include <glm/glm.hpp> 
+#include <vector> 
 
 #include <unistd.h>
 #include <iostream>
@@ -17,7 +19,7 @@ Shader* shaders;
 Shader* currentShader;
 static int shaderParam = 0;
 int numShaders = 7;
-std::string defaultJSON = "match";
+std::string defaultJSON = "empty";
 ShaderVars shaderVars;
 
 // Window size properties
@@ -200,10 +202,14 @@ GLFWwindow* SimWindowSetup(int N, int windowWidth)
 }
 
 // Processes to be called each frame for simulation window
-void SimWindowRenderLoop(GLFWwindow* window, float* density, float* temperature, unsigned char* walldata)
+void SimWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* source, unsigned char* walldata)
 {
+    float* density = state->fields.dens;
+    float* temperature = state->fields.temp;
+
     if(shaderParam == 0)
-        DrawLight(window, density, temperature);
+        // DrawLight(window, density, temperature);
+        DrawLight(window, source);
 
     // Clear background color
     glBlendFunc(GL_ONE, GL_ZERO);
@@ -257,7 +263,9 @@ void SetupTextures()
 {
 
     // Blank data for initial texture (revise?)
-    float blank[texSize] = {0.0f};
+    // float blank[texSize] = {0.0f};
+    float blank[texSize]; 
+    std::fill(blank, blank + texSize, 0.0f);
 
     // Set up density texture
     glGenTextures(1, &densTex);
@@ -338,12 +346,12 @@ void ControlWindowRenderLoop(GLFWwindow* window, SimState* state, SimSource* sou
     ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoResize);
 
     // Call GUI submethods
-    ParameterGUI(state);
+    // ParameterGUI(state);
     SourceGUI(window, state, source);
     ShaderGUI();
-    ResetGUI(state, source);
+    // ResetGUI(state, source);
     WindowGUI(state, source, props, timer);
-    FramerateGUI(timer);
+    // FramerateGUI(timer);
 
     // Render ImGui frame
     ImGui::End();
@@ -517,7 +525,7 @@ void ResetGUI(SimState* state, SimSource* source)
         LoadSources(const_cast<char*>(defaultJSON.c_str()), source);
     }
     ImGui::SameLine();
-    if(ImGui::Button("All", ImVec2(80.0, 20.0))){
+    if(ImGui::Button("Reset", ImVec2(80.0, 20.0))){
         source->RemoveAllSources();
         state->ResetState();
         LoadState(const_cast<char*>(defaultJSON.c_str()), state, source);
@@ -528,17 +536,17 @@ void ResetGUI(SimState* state, SimSource* source)
     if(ImGui::Button("Load Preset: ", ImVec2(170.0, 20.0))){
         switch(preset){
             case 0:
-                defaultJSON = "match";
+                defaultJSON = "empty";
                 break;
             case 1:
-                defaultJSON = "fog";
+                defaultJSON = "match";
                 break;
         }
         source->RemoveAllSources();
         state->ResetState();
         LoadState(const_cast<char*>(defaultJSON.c_str()), state, source);
     }
-    ImGui::Combo("##preset", &preset, "Match\0Fog\0");
+    ImGui::Combo("##preset", &preset, "Empty\0Match\0");
 
     ImGui::Text("");
     ImGui::Separator();
@@ -547,6 +555,7 @@ void ResetGUI(SimState* state, SimSource* source)
 // GUI for window control
 void WindowGUI(SimState* state, SimSource* source, WindowProps* props, SimTimer* timer)
 {
+    // ImGui::Text("Source Position: X = %.2f, Y = %.2f", sourceX, sourceY);
     ImGui::Text("Simulation Resolution:");
     ImGui::SameLine();
     ImGui::TextDisabled("(?)");
@@ -600,17 +609,20 @@ void WindowGUI(SimState* state, SimSource* source, WindowProps* props, SimTimer*
     ImGui::Separator();
 }
 
+bool isDragging = false;
 // GUI for source control
 void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source)
 {
     // Source variables
+    static float dragX = 0.0f, dragY = 0.0f;
+
     static float flowRate = 10.0;
-    static float temperature = 300.0;
-    static float speed = 1.0;
+    static float temperature = 2600.0;
+    static float speed = 50.0;
     static float angle = 0.0;
     static float flux = 10.0;
-    static float fVar = 0.0;
-    static float tVar = 0.0;
+    static float fVar = 0.5;
+    static float tVar = 50.0;
     static float wVar = 0.0;
     static float aVar = 0.0;
     static bool dynamic = false;
@@ -624,7 +636,7 @@ void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source)
         ImGui::BeginTooltip();
         ImGui::TextUnformatted("After selecting \"Place Source\", click to create source in simulation area.\nPress Shift to change shape and scroll the mouse wheel to change size.\nRight click a source to remove it.");
         ImGui::EndTooltip(); }
-    ImGui::Combo("##sourcetype", &sourceType, "Fluid\0Local Wind\0Global Wind\0Heat\0Energy\0");
+    ImGui::Combo("##sourcetype", &sourceType, "Fluid\0Local Wind\0Global Wind\0");
     ImGui::Checkbox("Fluxuating?", &dynamic);
 
     switch(sourceType){
@@ -641,7 +653,7 @@ void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source)
             }
             if(ImGui::Button("Place Source")){
                 showCursor = true;
-                cursorSize = 0.1;
+                cursorSize = 0.025;
             }
             break;
         case 1:
@@ -675,31 +687,6 @@ void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source)
                 }
             }
             break;
-        case 3:
-            ImGui::Text("Temperature:");
-            ImGui::InputFloat("##temp", &temperature, 1.0, 10.0);
-            if(dynamic){
-                ImGui::Text("Temperature Variance:");
-                ImGui::InputFloat("##tempVar", &tVar, 1.0, 10.0);
-            }
-            if(ImGui::Button("Place Source")){
-                showCursor = true;
-                cursorSize = 0.1;
-            }
-            break;
-        case 4:
-            ImGui::Text("Energy Flux:");
-            ImGui::InputFloat("##flux", &flux, 0.1, 1.0);
-            if(dynamic){
-                ImGui::Text("Temperature Variance:");
-                ImGui::InputFloat("##tempVar", &tVar, 1.0, 10.0);
-            }
-            if(ImGui::Button("Place Source")){
-                showCursor = true;
-                cursorSize = 0.1;
-            }
-            break;
-
     }
 
     // Create new source when mouse is clicked
@@ -709,54 +696,60 @@ void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source)
         float xposScreen = (2 * (float(xpos) - wMargin) / winWidth) - 1.0;
         float yposScreen = -1 * ((2 * (float(ypos) - hMargin) / winWidth) - 1.0);
 
-        if((abs(xposScreen) < 1.0) && (abs(yposScreen) < 1.0)){
-            if(dynamic){
-                switch(sourceType){
-                    case 0:
-                        source->CreateGasSourceDynamic(static_cast<SimSource::Shape>(cursorShape),
-                                        flowRate, temperature, xposScreen, yposScreen, cursorSize,
-                                        fVar, tVar);
-                        break;
-                    case 1:
-                        source->CreateWindSourceDynamic(angle, speed, xposScreen, yposScreen,
-                                        wVar, aVar);
-                        break;
-                    case 3:
-                        source->CreateHeatSourceDynamic(static_cast<SimSource::Shape>(cursorShape),
-                                        temperature, xposScreen, yposScreen, cursorSize,
-                                        tVar);
-                        break;
-                    case 4:
-                        source->CreateEnergySourceDynamic(static_cast<SimSource::Shape>(cursorShape),
-                                        flux, state->params.airTemp, state->params.airDens,
-                                        xposScreen, yposScreen, cursorSize,
-                                        tVar);
-                        break;
+        if(!isDragging){
+            if((abs(xposScreen) < 1.0) && (abs(yposScreen) < 1.0)){
+                isDragging = true;
+                dragX = xposScreen;
+                dragY = yposScreen;
+                if(dynamic){
+                    switch(sourceType){
+                        case 0:
+                            source->CreateGasSourceDynamic(static_cast<SimSource::Shape>(cursorShape),
+                                            flowRate, temperature, dragX, dragY, 0.05,
+                                            fVar, tVar);
+                            break;
+                        case 1:
+                            source->CreateWindSourceDynamic(angle, speed, dragX, dragY,
+                                            wVar, aVar);
+                            break;
+                    }
+                }else{
+                    switch(sourceType){
+                        case 0:
+                            source->CreateGasSource(static_cast<SimSource::Shape>(cursorShape),
+                                            flowRate, temperature, dragX, dragY, 0.05);
+                            break;
+                        case 1:
+                            source->CreateWindSource(angle, speed, dragX, dragY);
+                            break;
+                    }
                 }
-            }else{
-                switch(sourceType){
-                    case 0:
-                        source->CreateGasSource(static_cast<SimSource::Shape>(cursorShape),
-                                        flowRate, temperature, xposScreen, yposScreen, cursorSize);
-                        break;
-                    case 1:
-                        source->CreateWindSource(angle, speed, xposScreen, yposScreen);
-                        break;
-                    case 3:
-                        source->CreateHeatSource(static_cast<SimSource::Shape>(cursorShape),
-                                        temperature, xposScreen, yposScreen, cursorSize);
-                        break;
-                    case 4:
-                        source->CreateEnergySource(static_cast<SimSource::Shape>(cursorShape),
-                                        flux, state->params.airTemp, state->params.airDens,
-                                        xposScreen, yposScreen, cursorSize);
-                        break;
+            } 
+        }else {
+            // while dragging, update position
+            if (sourceType == 0){
+                dragX = xposScreen;
+                dragY = yposScreen;
+                SimSource::Source* firstSource = *(source->sources).rbegin(); 
+                source->RemoveSource(firstSource);
+                if(dynamic){
+                    source->CreateGasSourceDynamic(static_cast<SimSource::Shape>(cursorShape),
+                                            flowRate, temperature, dragX, dragY, 0.05,
+                                            fVar, tVar);
+                }
+                else{
+                    source->CreateGasSource(static_cast<SimSource::Shape>(cursorShape),
+                                                    flowRate, temperature, dragX, dragY, 0.05);
                 }
             }
-            source->UpdateSources();
-            showCursor = false;
         }
+    } else if (isDragging) {
+        // stop dragging
+        isDragging = false;
+        source->UpdateSources();
+        showCursor = false;
     }
+    
 
     // Remove source when right clicked
     if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)){
@@ -793,45 +786,69 @@ void DrawCursor(GLFWwindow* window)
         currentShader -> Use();
 }
 
-void DrawLight(GLFWwindow* window, float* density, float* temperature)
+void DrawLight(GLFWwindow* window, SimSource* source)
 {
-    float avgX = 0.5f;
-    float avgY = 0.3f;
+    
+    glm::vec2 lightPositions[10];
 
-    float sumX = 0.0f;
-    float sumY = 0.0f;
-    int totalPoints = 0;
-
-    float normalizedX = 0.0f;
-    float normalizedY = 0.0f;
-
-    // Iterate through the density and temperature arrays
-    for (int y = 0; y < texWidth; ++y) {
-        for (int x = 0; x < texWidth; ++x) {
-            int index = y * texWidth + x; // Linear index for the 2D grid
-            if (density[index] > 0.1f && temperature[index] > 1500.0f) {
-                // Convert grid coordinates to normalized device coordinates
-                normalizedX = (float(x) / texWidth);
-                normalizedY = (float(y) / texWidth);
-
-                sumX += normalizedX;
-                sumY += normalizedY;
-                ++totalPoints;
-            }
+    int lightCount = 0;
+    int totalSources = source->sources.size();
+    bool first = true;
+    for(const SimSource::Source* s: source->sources){
+        if (lightCount < 10 && s -> type == SimSource::Type::gas && s->temp > 1500) {
+            lightPositions[lightCount] = glm::vec2((s->xCenter+1)/2, (s->yCenter+1)/2);
+            lightCount++;
         }
     }
-    if (totalPoints > 0) {
-        avgX = sumX / totalPoints;
-        avgY = sumY / totalPoints;
-    }
-
     shaders[0].Use();
-    float lightIntensity = 1.0f; // Maximum brightness
-    float lightRadius = 0.5f; // Distance in UV space where the light fades
-    glUniform2f(glGetUniformLocation(shaders[0].ID, "lightPos"), avgX, avgY);
+    if (lightCount == 0){
+        return;
+    }
+    float lightIntensity = 0.6f; // Maximum brightness
+    float lightRadius = 0.3f; // Distance in UV space where the light fades
+    glUniform2fv(glGetUniformLocation(shaders[0].ID, "lightPos[0]"), lightCount, &lightPositions[0].x);
     glUniform1f(glGetUniformLocation(shaders[0].ID, "lightIntensity"), lightIntensity);
     glUniform1f(glGetUniformLocation(shaders[0].ID, "lightRadius"), lightRadius);
 }
+// void DrawLight(GLFWwindow* window, float* density, float* temperature)
+// {
+//     float avgX = 0.5f;
+//     float avgY = 0.3f;
+
+//     float sumX = 0.0f;
+//     float sumY = 0.0f;
+//     int totalPoints = 0;
+
+//     float normalizedX = 0.0f;
+//     float normalizedY = 0.0f;
+
+//     // Iterate through the density and temperature arrays
+//     for (int y = 0; y < texWidth; ++y) {
+//         for (int x = 0; x < texWidth; ++x) {
+//             int index = y * texWidth + x; // Linear index for the 2D grid
+//             if (density[index] > 0.1f && temperature[index] > 1500.0f) {
+//                 // Convert grid coordinates to normalized device coordinates
+//                 normalizedX = (float(x) / texWidth);
+//                 normalizedY = (float(y) / texWidth);
+
+//                 sumX += normalizedX;
+//                 sumY += normalizedY;
+//                 ++totalPoints;
+//             }
+//         }
+//     }
+//     if (totalPoints > 0) {
+//         avgX = sumX / totalPoints;
+//         avgY = sumY / totalPoints;
+//     }
+//     shaders[0].Use();
+    
+//     float lightIntensity = 1.0f; // Maximum brightness
+//     float lightRadius = 0.5f; // Distance in UV space where the light fades
+//     glUniform2f(glGetUniformLocation(shaders[0].ID, "lightPos"), avgX, avgY);
+//     glUniform1f(glGetUniformLocation(shaders[0].ID, "lightIntensity"), lightIntensity);
+//     glUniform1f(glGetUniformLocation(shaders[0].ID, "lightRadius"), lightRadius);
+// }
 
 
 // GUI for framerate functions
