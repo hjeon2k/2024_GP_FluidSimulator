@@ -6,8 +6,8 @@
 #include "headers/StateLoader.h"
 #include "headers/stb_image.h"
 
-#include <glm/glm.hpp> 
-#include <vector> 
+#include <glm/glm.hpp>
+#include <vector>
 
 #include <unistd.h>
 #include <iostream>
@@ -264,7 +264,7 @@ void SetupTextures()
 
     // Blank data for initial texture (revise?)
     // float blank[texSize] = {0.0f};
-    float blank[texSize]; 
+    float blank[texSize];
     std::fill(blank, blank + texSize, 0.0f);
 
     // Set up density texture
@@ -724,13 +724,13 @@ void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source)
                             break;
                     }
                 }
-            } 
+            }
         }else {
             // while dragging, update position
             if (sourceType == 0){
                 dragX = xposScreen;
                 dragY = yposScreen;
-                SimSource::Source* firstSource = *(source->sources).rbegin(); 
+                SimSource::Source* firstSource = *(source->sources).rbegin();
                 source->RemoveSource(firstSource);
                 if(dynamic){
                     source->CreateGasSourceDynamic(static_cast<SimSource::Shape>(cursorShape),
@@ -749,7 +749,7 @@ void SourceGUI(GLFWwindow* window, SimState* state, SimSource* source)
         source->UpdateSources();
         showCursor = false;
     }
-    
+
 
     // Remove source when right clicked
     if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)){
@@ -788,7 +788,7 @@ void DrawCursor(GLFWwindow* window)
 
 void DrawLight(GLFWwindow* window, SimSource* source)
 {
-    
+
     glm::vec2 lightPositions[10];
 
     int lightCount = 0;
@@ -796,7 +796,7 @@ void DrawLight(GLFWwindow* window, SimSource* source)
     bool first = true;
     for(const SimSource::Source* s: source->sources){
         if (lightCount < 10 && s -> type == SimSource::Type::gas && s->temp > 1500) {
-            lightPositions[lightCount] = glm::vec2((s->xCenter+1)/2, (s->yCenter+1)/2);
+            lightPositions[lightCount] = glm::vec2((s->xCenter+1)/2 + RandomNormal(0.0, 0.003), (s->yCenter+1)/2 + RandomNormal(0.0, 0.003));
             lightCount++;
         }
     }
@@ -842,14 +842,14 @@ void DrawLight(GLFWwindow* window, SimSource* source)
 //         avgY = sumY / totalPoints;
 //     }
 //     shaders[0].Use();
-    
+
 //     float lightIntensity = 1.0f; // Maximum brightness
 //     float lightRadius = 0.5f; // Distance in UV space where the light fades
 //     glUniform2f(glGetUniformLocation(shaders[0].ID, "lightPos"), avgX, avgY);
 //     glUniform1f(glGetUniformLocation(shaders[0].ID, "lightIntensity"), lightIntensity);
 //     glUniform1f(glGetUniformLocation(shaders[0].ID, "lightRadius"), lightRadius);
 // }
-
+// Generate normal distributed random variable
 
 // GUI for framerate functions
 void FramerateGUI(SimTimer* timer)
