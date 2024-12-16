@@ -2,7 +2,7 @@
 Fluid Simulation in C++ and OpenGL by Suh Yoon Jeon and Hyesung Jeon
 
 ![](init.gif)
-*demo 1: click to start the demo video*
+*demo part 1: click to start the video*
 
 ## Execution
 
@@ -46,7 +46,7 @@ Additionally, the simulator supports multiple rendering modes, including:
 These rendering modes are showcased in the demo video below.
 
 ![](render.gif)
-*demo 2: click to start the demo video*
+*demo part 2: click to start the video*
 
 ## Explanation
 
