@@ -46,7 +46,8 @@ Additionally, the simulator supports multiple rendering modes, including:
 
 These rendering modes are showcased in the demo video below.
 
-![](render.gif)
+<img src="render.gif" width="600" height="477"/>
+
 *demo part 2: click to start the video*
 
 ## Explanation
