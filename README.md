@@ -2,6 +2,7 @@
 Fluid Simulation in C++ and OpenGL by Suh Yoon Jeon and Hyesung Jeon
 
 ![](init.gif)
+
 *demo part 1: click to start the video*
 
 ## Execution
