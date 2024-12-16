@@ -2,6 +2,7 @@
 Fluid Simulation in C++ and OpenGL by Suh Yoon Jeon and Hyesung Jeon
 
 ![](init.gif)
+*demo 1: click to start the demo video*
 
 ## Execution
 
@@ -32,7 +33,22 @@ make
 ../bin/FluidSimGUI
 ```
 
-## Brief Explanation
+As demonstrated in the video above, you can initiate fires using the 'Place Source' feature. By dragging the mouse, the fire can be moved around before its final placement.
+
+Additionally, the simulator supports multiple rendering modes, including:
+
+* **Rendering Modes**
+  * Physical: Full rendering of fire and smoke dynamics
+  * Blackbody: Rendering the blackbody radiation effect
+  * Density: Displaying fluid density
+  * Temperature: Visualizing temperature distribution
+
+These rendering modes are showcased in the demo video below.
+
+![](render.gif)
+*demo 2: click to start the demo video*
+
+## Explanation
 
 This simulator models 2D fluid dynamics involving the interaction of mixed fluids. It simulates various phenomena, including:
 
