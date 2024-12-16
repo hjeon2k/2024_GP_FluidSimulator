@@ -1,6 +1,8 @@
 # Interactive Rendering of Fire and Smoke Dynamics  
 Fluid Simulation in C++ and OpenGL by Suh Yoon Jeon and Hyesung Jeon
 
+![](init.gif)
+
 ## Execution
 
 Our project is designed for Linux systems and has been tested on Ubuntu.
